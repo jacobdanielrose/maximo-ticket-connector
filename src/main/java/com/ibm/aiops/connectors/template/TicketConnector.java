@@ -73,6 +73,7 @@ public class TicketConnector extends NotificationConnectorBase {
 
     private ConnectorAction issuePollingAction;
     private IssuePollingAction issuePollingInstance;
+    private DB2PollingAction db2PollingInstance;
 
     protected AtomicReference<Configuration> _configuration;
 
@@ -172,8 +173,22 @@ public class TicketConnector extends NotificationConnectorBase {
         // collect data if data flow is enable
         if (booleanEqual(connectionCreateCfg.isData_flow(), true)) {
             logger.log(Level.INFO, "Data flow is on");
-            issuePollingAction = new ConnectorAction(ConnectorConstants.ISSUE_POLL, connectionCreateCfg, this,
-                    _issuePollingActionCounter, _issuePollingActionErrorCounter, null);
+
+            // Determine which polling action to use based on configuration
+            // If JDBC URL or DB host is configured, use DB2 polling, otherwise use default HTTP polling
+            boolean useDB2Polling = (connectionCreateCfg.getJdbcUrl() != null
+                    && !connectionCreateCfg.getJdbcUrl().isEmpty())
+                    || (connectionCreateCfg.getDbHost() != null && !connectionCreateCfg.getDbHost().isEmpty());
+
+            if (useDB2Polling) {
+                logger.log(Level.INFO, "Using DB2 JDBC polling for Maximo");
+                issuePollingAction = new ConnectorAction(ConnectorConstants.DB2_POLL, connectionCreateCfg, this,
+                        _issuePollingActionCounter, _issuePollingActionErrorCounter, null);
+            } else {
+                logger.log(Level.INFO, "Using HTTP polling");
+                issuePollingAction = new ConnectorAction(ConnectorConstants.ISSUE_POLL, connectionCreateCfg, this,
+                        _issuePollingActionCounter, _issuePollingActionErrorCounter, null);
+            }
             addActionToQueue(issuePollingAction);
         }
     }
@@ -187,8 +202,12 @@ public class TicketConnector extends NotificationConnectorBase {
     private void stopPolling() {
         // Stop old polling
         if (issuePollingInstance != null) {
-            logger.log(Level.INFO, "stopping problem polling");
+            logger.log(Level.INFO, "stopping HTTP issue polling");
             issuePollingInstance.stop();
+        }
+        if (db2PollingInstance != null) {
+            logger.log(Level.INFO, "stopping DB2 polling");
+            db2PollingInstance.stop();
         }
     }
 
@@ -209,6 +228,8 @@ public class TicketConnector extends NotificationConnectorBase {
                 Runnable action = ConnectorActionFactory.getRunnableAction(currentAction);
                 if (action instanceof IssuePollingAction) {
                     issuePollingInstance = (IssuePollingAction) action;
+                } else if (action instanceof DB2PollingAction) {
+                    db2PollingInstance = (DB2PollingAction) action;
                 }
                 executor.execute(action);
             } catch (RejectedExecutionException ex) {

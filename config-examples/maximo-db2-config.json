@@ -1,0 +1,40 @@
+{
+  "_comment": "Sample configuration for Maximo DB2 JDBC Connector",
+  
+  "data_flow": true,
+  "datasource_type": ["tickets"],
+  
+  "_comment_jdbc": "JDBC Connection Settings - Option 1: Provide full JDBC URL",
+  "jdbcUrl": "jdbc:db2://maximo-prod.example.com:50000/MAXDB76",
+  
+  "_comment_jdbc_alt": "JDBC Connection Settings - Option 2: Provide components",
+  "dbHost": "maximo-prod.example.com",
+  "dbPort": "50000",
+  "dbName": "MAXDB76",
+  "dbSchema": "MAXIMO",
+  "viewName": "INCIDENT_VIEW",
+  
+  "_comment_auth": "Database Authentication",
+  "username": "aiops_connector",
+  "password": "your_secure_password_here",
+  
+  "_comment_ssl": "SSL/TLS Configuration (optional)",
+  "useSSL": false,
+  "sslTrustStore": "",
+  "sslTrustStorePassword": "",
+  
+  "_comment_mode": "Collection Mode: 'historical' or 'live'",
+  "collectionMode": "live",
+  
+  "_comment_historical": "Historical Mode Settings (only for historical mode)",
+  "start": 0,
+  "end": 0,
+  
+  "_comment_live": "Live Mode Settings (only for live mode)",
+  "issueSamplingRate": 5,
+  
+  "_comment_optional": "Optional Settings",
+  "url": "https://maximo-prod.example.com/maximo",
+  "description": "Maximo Production Environment",
+  "mappings": ""
+}

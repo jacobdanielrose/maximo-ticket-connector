@@ -38,4 +38,16 @@ public class Configuration {
     protected int issueSamplingRate;
     protected String mappings;
     protected String description;
+
+    // DB2/JDBC specific configuration
+    protected String jdbcUrl; // JDBC connection URL (e.g., jdbc:db2://hostname:port/database)
+    protected String dbHost; // Database host
+    protected String dbPort; // Database port (default: 50000 for DB2)
+    protected String dbName; // Database name
+    protected String dbSchema; // Database schema (e.g., MAXIMO)
+    protected String viewName; // View name to query (e.g., INCIDENT_VIEW)
+    protected String driverClass; // JDBC driver class (default: com.ibm.db2.jcc.DB2Driver)
+    protected boolean useSSL; // Whether to use SSL for DB connection
+    protected String sslTrustStore; // SSL truststore path if needed
+    protected String sslTrustStorePassword; // SSL truststore password
 }

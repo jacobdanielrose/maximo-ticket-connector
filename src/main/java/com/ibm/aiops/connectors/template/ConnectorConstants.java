@@ -35,6 +35,7 @@ public class ConnectorConstants {
 
     // Actions
     static final String ISSUE_POLL = "com.ibm.type.ticket." + TICKET_TYPE + ".issue.poll";
+    static final String DB2_POLL = "com.ibm.type.ticket." + TICKET_TYPE + ".db2.poll";
     static final String ISSUE_CREATE = "com.ibm.type.ticket." + TICKET_TYPE + ".issue.create";
     static final String ISSUE_UPDATE = "com.ibm.type.ticket." + TICKET_TYPE + ".issue.update";
     static final String ISSUE_CLOSE = "com.ibm.type.ticket." + TICKET_TYPE + ".issue.close";

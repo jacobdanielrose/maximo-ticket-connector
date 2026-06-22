@@ -15,6 +15,8 @@ public class ConnectorActionFactory {
         if (action != null) {
             if (ConnectorConstants.ISSUE_POLL.equals(action.getActionType())) {
                 return new IssuePollingAction(action);
+            } else if (ConnectorConstants.DB2_POLL.equals(action.getActionType())) {
+                return new DB2PollingAction(action);
             } else if (ConnectorConstants.ISSUE_CREATE.equals(action.getActionType())
                     || ConnectorConstants.ISSUE_UPDATE.equals(action.getActionType())
                     || ConnectorConstants.ISSUE_CLOSE.equals(action.getActionType())) {

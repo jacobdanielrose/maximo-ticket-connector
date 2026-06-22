@@ -29,3 +29,12 @@ hs_err_pid*
 # Remove elastic credentials
 elastic
 certs
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+
+# Docker build artifacts
+*.tar
+.dockerignore.local
