@@ -11,5 +11,5 @@ configurations:
 
 images:
   - name: ticket-template
-    newName: PLACEHOLDER_REGISTRY_ADDRESS/cp/aiopsedge/cp4waiops-connector-ticket-template
+    newName: quay.io/jacobdanielrose/maximo-ticket-connector
     newTag: latest
