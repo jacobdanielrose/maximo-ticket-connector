@@ -36,6 +36,8 @@ spec:
           - url
           - username
           - password
+          - dbSchema
+          - viewName
     properties:
       password:
         format: secret
@@ -44,8 +46,17 @@ spec:
         type: string
       url:
         type: string
+        description: "JDBC URL for DB2 connection (e.g., jdbc:db2://host:port/database)"
       username:
         type: string
+      dbSchema:
+        type: string
+        description: "Database schema name (e.g., MAXIMO)"
+        default: "MAXIMO"
+      viewName:
+        type: string
+        description: "View name to query (e.g., INCIDENT_VIEW)"
+        default: "INCIDENT_VIEW"
       issueSamplingRate:
         type: integer
       datasource_type:
@@ -145,26 +156,46 @@ spec:
       - id: url
         element: input
         type: text
-        label: "{{connector.servicenow.form.url.label}}"
-        helperText: "{{common.egress_warning}}"
+        label: "JDBC URL"
+        helperText: "DB2 JDBC connection URL (e.g., jdbc:db2://host:port/database:sslConnection=true;)"
+        placeholder: "jdbc:db2://hostname:50001/BLUDB:sslConnection=true;"
         apiMapping: connection_config.url
         formStep: addConnection
         isRequired: true
-        isURL : true
       - id: username
         element: input
         type: text
-        label: "{{connector.servicenow.form.user_id.label}}"
-        placeholder: "{{connector.common.form.username.placeholder}}"
+        label: "Database Username"
+        placeholder: "db2inst1"
         apiMapping: connection_config.username
         formStep: addConnection
         isRequired: true
       - id: password
         element: input
         type: password
-        label: "{{connector.common.form.password.label}}"
-        helperText: "{{connector.common.form.password.placeholder}}"
+        label: "Database Password"
+        helperText: "DB2 user password"
         apiMapping: connection_config.password
+        formStep: addConnection
+        isRequired: true
+      - id: dbSchema
+        element: input
+        type: text
+        label: "Database Schema"
+        placeholder: "MAXIMO"
+        defaultValue: "MAXIMO"
+        helperText: "Schema containing the incident view"
+        apiMapping: connection_config.dbSchema
+        formStep: addConnection
+        isRequired: true
+      - id: viewName
+        element: input
+        type: text
+        label: "View Name"
+        placeholder: "INCIDENT_VIEW"
+        defaultValue: "INCIDENT_VIEW"
+        helperText: "Name of the view to query for incidents"
+        apiMapping: connection_config.viewName
         formStep: addConnection
         isRequired: true
       - id: orchestration
