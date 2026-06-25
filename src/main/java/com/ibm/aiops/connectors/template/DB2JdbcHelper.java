@@ -51,24 +51,6 @@ public class DB2JdbcHelper {
             }
         }
 
-        // If skipCertValidation is enabled, strip any existing sslCertLocation/
-        // sslTrustStoreLocation from the URL and append the IBM JDBC driver property
-        // that disables certificate hostname/chain validation.
-        if (config.isSkipCertValidation()) {
-            // Remove any existing sslCertLocation or sslTrustStoreLocation the user may
-            // have typed, then append sslTrustStoreLocation= (empty) which causes the
-            // IBM JDBC driver to skip certificate validation entirely.
-            this.jdbcUrl = this.jdbcUrl.replaceAll("sslCertLocation=[^;]*;?", "")
-                    .replaceAll("sslTrustStoreLocation=[^;]*;?", "").replaceAll(";$", "");
-            if (!this.jdbcUrl.contains(":sslConnection=true")) {
-                this.jdbcUrl += ":sslConnection=true;";
-            } else if (!this.jdbcUrl.endsWith(";")) {
-                this.jdbcUrl += ";";
-            }
-            this.jdbcUrl += "sslTrustStoreLocation=;";
-            logger.log(Level.WARNING, "SSL certificate validation is disabled");
-        }
-
         // Setup connection properties
         connectionProps = new Properties();
         connectionProps.setProperty("user", config.getUsername());
@@ -82,6 +64,22 @@ public class DB2JdbcHelper {
         // Additional DB2 specific properties
         connectionProps.setProperty("retrieveMessagesFromServerOnGetMessage", "true");
         connectionProps.setProperty("progressiveStreaming", "2");
+
+        // Skip SSL cert validation via connection properties (not the URL).
+        // Triggered explicitly by the skipCertValidation toggle, or automatically
+        // when sslConnection=true is present but no truststore is configured —
+        // which is the common case for MAS DB2 with a self-signed certificate.
+        boolean autoSkip = this.jdbcUrl.contains("sslConnection=true")
+                && (config.getSslTrustStore() == null || config.getSslTrustStore().isEmpty());
+        if (config.isSkipCertValidation() || autoSkip) {
+            this.jdbcUrl = this.jdbcUrl
+                    .replaceAll(";?sslCertLocation=[^;]*", "")
+                    .replaceAll(";?sslTrustStoreLocation=[^;]*", "");
+            connectionProps.setProperty("sslTrustStoreType", "JKS");
+            connectionProps.setProperty("sslTrustStoreLocation", "");
+            connectionProps.setProperty("sslTrustStorePassword", "");
+            logger.log(Level.WARNING, "SSL certificate validation is disabled (self-signed cert mode)");
+        }
 
         logger.log(Level.INFO, "JDBC URL configured: " + jdbcUrl);
     }
