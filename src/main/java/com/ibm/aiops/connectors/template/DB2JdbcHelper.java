@@ -58,10 +58,8 @@ public class DB2JdbcHelper {
             // Remove any existing sslCertLocation or sslTrustStoreLocation the user may
             // have typed, then append sslTrustStoreLocation= (empty) which causes the
             // IBM JDBC driver to skip certificate validation entirely.
-            this.jdbcUrl = this.jdbcUrl
-                    .replaceAll("sslCertLocation=[^;]*;?", "")
-                    .replaceAll("sslTrustStoreLocation=[^;]*;?", "")
-                    .replaceAll(";$", "");
+            this.jdbcUrl = this.jdbcUrl.replaceAll("sslCertLocation=[^;]*;?", "")
+                    .replaceAll("sslTrustStoreLocation=[^;]*;?", "").replaceAll(";$", "");
             if (!this.jdbcUrl.contains(":sslConnection=true")) {
                 this.jdbcUrl += ":sslConnection=true;";
             } else if (!this.jdbcUrl.endsWith(";")) {
