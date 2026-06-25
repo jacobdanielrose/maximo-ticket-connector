@@ -205,9 +205,9 @@ for SECRET_NAME in $DB2_SECRETS; do
     echo ""
 done
 
-# Find DB2 service
+# Find DB2 service and route
 echo "=================================================="
-log_info "Looking for DB2 service..."
+log_info "Looking for DB2 service and external route..."
 echo "=================================================="
 
 DB2_SERVICE=$(oc get services 2>/dev/null | grep -i db2 | head -n 1 | awk '{print $1}')
@@ -222,20 +222,35 @@ else
     log_success "Found DB2 service: $DB2_SERVICE"
     
     # Get service details
-    HOSTNAME="${DB2_SERVICE}.${NAMESPACE}.svc.cluster.local"
+    INTERNAL_HOSTNAME="${DB2_SERVICE}.${NAMESPACE}.svc.cluster.local"
     PORT=$(oc get service $DB2_SERVICE -o jsonpath='{.spec.ports[0].port}' 2>/dev/null)
+    
+    # Check for external route
+    DB2_ROUTE=$(oc get route 2>/dev/null | grep -i db2 | head -n 1 | awk '{print $1}')
+    if [ ! -z "$DB2_ROUTE" ]; then
+        EXTERNAL_HOSTNAME=$(oc get route $DB2_ROUTE -o jsonpath='{.spec.host}' 2>/dev/null)
+        log_success "Found external route: $DB2_ROUTE"
+        HOSTNAME="$EXTERNAL_HOSTNAME"
+    else
+        log_warning "No external route found - using internal service"
+        log_info "To create external route, run:"
+        echo "  oc create route passthrough db2-external --service=$DB2_SERVICE --port=$PORT"
+        HOSTNAME="$INTERNAL_HOSTNAME"
+    fi
     
     echo ""
     echo "Connection Details:"
     echo "-------------------"
-    echo "Hostname: $HOSTNAME"
+    echo "Internal Hostname: $INTERNAL_HOSTNAME"
+    echo "External Hostname: ${EXTERNAL_HOSTNAME:-Not configured}"
+    echo "Recommended Hostname: $HOSTNAME"
     echo "Port: $PORT"
     echo "Database: ${FOUND_DATABASE:-MAXDB76}"
     echo ""
     
     if [ ! -z "$FOUND_USERNAME" ]; then
-        echo "JDBC URL:"
-        echo "jdbc:db2://${HOSTNAME}:${PORT}/${FOUND_DATABASE:-MAXDB76}"
+        echo "JDBC URL (for cross-cluster access):"
+        echo "jdbc:db2://${HOSTNAME}:${PORT}/${FOUND_DATABASE:-MAXDB76}:sslConnection=true;"
         echo ""
     fi
 fi
@@ -257,6 +272,21 @@ export DB_PASSWORD='$FOUND_PASSWORD'
 export DB_SCHEMA=MAXIMO
 export VIEW_NAME=INCIDENT_VIEW
 EOF
+    echo ""
+    echo "JDBC URL for AIOps Integration:"
+    echo "================================"
+    echo "jdbc:db2://${HOSTNAME}:${PORT}/${FOUND_DATABASE:-MAXDB76}:sslConnection=true;"
+    echo ""
+    if [ -z "$EXTERNAL_HOSTNAME" ]; then
+        echo "⚠️  WARNING: Using internal service URL"
+        echo "   This will only work if AIOps is in the same cluster"
+        echo ""
+        echo "To expose DB2 externally for cross-cluster access:"
+        echo "  oc create route passthrough db2-external --service=$DB2_SERVICE --port=$PORT"
+        echo "  Then re-run this script to get the external URL"
+    else
+        echo "✅ Using external route - works across clusters"
+    fi
     echo ""
     echo "Copy the above to your .env file!"
 else

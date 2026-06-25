@@ -5,23 +5,63 @@
 Before starting, ensure you have:
 
 - [ ] OpenShift CLI (`oc`) installed and logged in
-- [ ] Access to IBM AIOps namespace
-- [ ] Access to DB2 namespace (`db2u`)
+- [ ] Access to IBM AIOps namespace (can be different cluster)
+- [ ] Access to Maximo DB2 namespace (`db2u`)
 - [ ] Quay.io account (or other container registry)
 - [ ] Maven installed (or use containerized build)
 - [ ] Podman or Docker installed
 
-## Step 1: Get DB2 Credentials (5 minutes)
+## Important: Cross-Cluster Setup
 
-### 1.1 Extract DB2 Connection Details
+**This connector supports cross-cluster deployment:**
+- Maximo DB2 can be on one OpenShift cluster
+- AIOps can be on a different OpenShift cluster
+- DB2 must be exposed via external route for cross-cluster access
+
+## Step 1: Expose DB2 Externally (5 minutes)
+
+### 1.1 Create External Route for DB2
+
+Since Maximo and AIOps are on different clusters, you must expose DB2 externally:
+
+```bash
+# Login to Maximo cluster
+oc login https://maximo-cluster.com
+
+# Switch to DB2 namespace
+oc project db2u
+
+# Find DB2 service
+DB2_SERVICE=$(oc get svc | grep db2u | grep engn-svc | awk '{print $1}')
+echo "DB2 Service: $DB2_SERVICE"
+
+# Create passthrough route (preserves SSL)
+oc create route passthrough db2-external \
+  --service=$DB2_SERVICE \
+  --port=50001
+
+# Get external hostname
+DB2_EXTERNAL=$(oc get route db2-external -o jsonpath='{.spec.host}')
+echo "External DB2 URL: $DB2_EXTERNAL"
+```
+
+**Save the external hostname** - you'll use it in the JDBC URL.
+
+### 1.2 Extract DB2 Credentials
 
 ```bash
 # Run the credential extraction script
 ./get-maximo-db2-creds.sh db2u
 ```
 
-**Save these values - you'll need them later:**
-- DB_HOST (e.g., `c-mas-dev-system-db2u-engn-svc.db2u.svc`)
+**The script will now show:**
+- Internal hostname (for same-cluster access)
+- External hostname (for cross-cluster access) ✅
+- JDBC URL with the correct hostname
+- Warning if no external route exists
+
+**Save these values:**
+- External DB_HOST (e.g., `db2-external-db2u.apps.maximo-cluster.com`)
 - DB_PORT (e.g., `50001`)
 - DB_NAME (e.g., `BLUDB`)
 - DB_USER (e.g., `db2inst1`)
@@ -93,8 +133,8 @@ export REGISTRY_PASSWORD=<your-quay-password>
 export IMAGE_NAME=jacobdanielrose/maximo-ticket-connector
 export IMAGE_TAG=latest
 
-# DB2 Connection (from Step 1)
-export DB_HOST=c-mas-dev-system-db2u-engn-svc.db2u.svc
+# DB2 Connection (from Step 1 - use EXTERNAL hostname)
+export DB_HOST=db2-external-db2u.apps.maximo-cluster.com
 export DB_PORT=50001
 export DB_NAME=BLUDB
 export DB_USER=db2inst1
@@ -102,6 +142,8 @@ export DB_PASSWORD=<your-db2-password>
 export DB_SCHEMA=MAXIMO
 export VIEW_NAME=INCIDENT_VIEW
 ```
+
+**⚠️ IMPORTANT:** Use the **external route hostname**, not the internal service name!
 
 Save and exit (Ctrl+X, Y, Enter)
 
@@ -206,7 +248,8 @@ oc get pods -l app=ticket-template
 **Connection Details:**
 - **Name**: `Maximo DB2 Connector`
 - **Description**: `Connects to Maximo DB2 to ingest incidents`
-- **JDBC URL**: `jdbc:db2://c-mas-dev-system-db2u-engn-svc.db2u.svc:50001/BLUDB:sslConnection=true;`
+- **JDBC URL**: `jdbc:db2://db2-external-db2u.apps.maximo-cluster.com:50001/BLUDB:sslConnection=true;`
+  - ⚠️ **Use the external route hostname from Step 1**
 - **Database Username**: `db2inst1`
 - **Database Password**: `<your-db2-password>`
 - **Database Schema**: `MAXIMO`

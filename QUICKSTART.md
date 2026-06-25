@@ -6,22 +6,49 @@ Complete step-by-step guide to set up the Maximo DB2 JDBC connector for IBM AIOp
 
 - ✅ OpenShift cluster with Maximo installed
 - ✅ Access to Maximo's DB2 database namespace
+- ✅ IBM AIOps cluster (can be different from Maximo cluster)
 - ✅ `oc` CLI installed and configured
 - ✅ Podman or Docker installed
 - ✅ Container registry account (Docker Hub, Quay.io, etc.)
 
-## 🚀 Complete Setup (5 Steps)
+## 🚀 Complete Setup (6 Steps)
+
+### Step 0: Expose DB2 Externally (5 minutes) - REQUIRED for Cross-Cluster
+
+**If Maximo and AIOps are on different clusters, you MUST expose DB2 externally:**
+
+```bash
+# 1. Login to Maximo cluster
+oc login https://maximo-cluster.com
+
+# 2. Switch to DB2 namespace
+oc project db2u
+
+# 3. Find DB2 service
+DB2_SERVICE=$(oc get svc | grep db2u | grep engn-svc | awk '{print $1}')
+echo "DB2 Service: $DB2_SERVICE"
+
+# 4. Create external route
+oc create route passthrough db2-external \
+  --service=$DB2_SERVICE \
+  --port=50001
+
+# 5. Get external hostname
+oc get route db2-external -o jsonpath='{.spec.host}'
+```
+
+**Save the external hostname** - you'll use it in all configurations!
 
 ### Step 1: Extract DB2 Credentials (5 minutes)
 
 ```bash
-# 1. Login to OpenShift
-oc login https://your-cluster.com
+# 1. Login to Maximo cluster
+oc login https://maximo-cluster.com
 
 # 2. Find DB2 namespace
 oc get projects | grep -i db2
 
-# 3. Extract credentials
+# 3. Extract credentials (now includes external route)
 ./get-maximo-db2-creds.sh db2u
 
 # 4. Copy the output - you'll need it for Step 3
@@ -31,13 +58,19 @@ oc get projects | grep -i db2
 ```bash
 Configuration for connector .env file:
 =======================================
-export DB_HOST=db2-service.db2u.svc.cluster.local
-export DB_PORT=50000
+export DB_HOST=db2-external-db2u.apps.maximo-cluster.com
+export DB_PORT=50001
 export DB_NAME=BLUDB
 export DB_USERNAME=db2inst1
 export DB_PASSWORD='your-password'
 export DB_SCHEMA=MAXIMO
 export VIEW_NAME=INCIDENT_VIEW
+
+JDBC URL for AIOps Integration:
+================================
+jdbc:db2://db2-external-db2u.apps.maximo-cluster.com:50001/BLUDB:sslConnection=true;
+
+✅ Using external route - works across clusters
 ```
 
 ### Step 2: Create DB2 View in Maximo (10 minutes)
@@ -103,15 +136,17 @@ export REGISTRY_PASSWORD=your-password
 export IMAGE_NAME=your-org/maximo-connector
 export IMAGE_TAG=1.0.0
 
-# DB2 Configuration (from Step 1)
-export DB_HOST=db2-service.db2u.svc.cluster.local
-export DB_PORT=50000
+# DB2 Configuration (from Step 1 - use EXTERNAL hostname!)
+export DB_HOST=db2-external-db2u.apps.maximo-cluster.com
+export DB_PORT=50001
 export DB_NAME=BLUDB
 export DB_USERNAME=db2inst1
 export DB_PASSWORD='your-db-password'
 export DB_SCHEMA=MAXIMO
 export VIEW_NAME=INCIDENT_VIEW
 ```
+
+**⚠️ CRITICAL:** Use the **external route hostname**, not internal service!
 
 **Complete .env example:**
 ```bash
@@ -122,9 +157,9 @@ export REGISTRY_PASSWORD='your-registry-token'
 export IMAGE_NAME=jacobdanielrose/maximo-connector
 export IMAGE_TAG=1.0.0
 
-# DB2 Configuration
-export DB_HOST=db2-service.db2u.svc.cluster.local
-export DB_PORT=50000
+# DB2 Configuration (EXTERNAL hostname for cross-cluster)
+export DB_HOST=db2-external-db2u.apps.maximo-cluster.com
+export DB_PORT=50001
 export DB_NAME=BLUDB
 export DB_USERNAME=db2inst1
 export DB_PASSWORD='your-db-password'
@@ -195,7 +230,8 @@ oc get bundlemanifest | grep maximo
 3. **Search for** "Maximo DB2 Connector"
 4. **Fill in configuration:**
    - **Name:** Maximo Production
-   - **JDBC URL:** `jdbc:db2://db2-service.db2u.svc.cluster.local:50000/BLUDB`
+   - **JDBC URL:** `jdbc:db2://db2-external-db2u.apps.maximo-cluster.com:50001/BLUDB:sslConnection=true;`
+     - ⚠️ **Use external route hostname from Step 0/1**
    - **Username:** `db2inst1`
    - **Password:** `your-db-password`
    - **Schema:** `MAXIMO`
