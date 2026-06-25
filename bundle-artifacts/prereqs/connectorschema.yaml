@@ -162,6 +162,8 @@ spec:
         apiMapping: connection_config.url
         formStep: addConnection
         isRequired: true
+        pattern: "^jdbc:db2://.*"
+        patternErrorMessage: "Must be a valid JDBC URL starting with jdbc:db2://"
       - id: username
         element: input
         type: text
