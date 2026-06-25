@@ -93,13 +93,17 @@ public class DB2JdbcHelper {
      */
     private void installTrustAllSslContext() {
         try {
-            TrustManager[] trustAll = new TrustManager[] {
-                new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
-                    public void checkClientTrusted(X509Certificate[] c, String a) {}
-                    public void checkServerTrusted(X509Certificate[] c, String a) {}
+            TrustManager[] trustAll = new TrustManager[] { new X509TrustManager() {
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
                 }
-            };
+
+                public void checkClientTrusted(X509Certificate[] c, String a) {
+                }
+
+                public void checkServerTrusted(X509Certificate[] c, String a) {
+                }
+            } };
             SSLContext sc = SSLContext.getInstance("TLS");
             sc.init(null, trustAll, new java.security.SecureRandom());
             SSLContext.setDefault(sc);
