@@ -165,6 +165,7 @@ spec:
           secret:
             secretName: ticket-template
             defaultMode: 420
+            optional: true
         - name: server-certs
           emptyDir: {}
         - name: config-overrides
@@ -174,6 +175,7 @@ spec:
             sources:
               - secret:
                   name: connector-bridge-connection-info
+                  optional: true
                   items:
                     - key: ca.crt
                       path: ca.crt
@@ -187,6 +189,7 @@ spec:
                       path: port
               - secret:
                   name: connector
+                  optional: true
                   items:
                     - key: id
                       path: id
@@ -196,6 +199,7 @@ spec:
                       path: client-secret
               - secret:
                   name: aiopsedge-health-check-key
+                  optional: true
                   items:
                     - key: apikey
                       path: metric-api-key
