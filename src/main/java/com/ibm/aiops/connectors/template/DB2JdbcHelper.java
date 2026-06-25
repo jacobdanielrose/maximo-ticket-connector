@@ -31,9 +31,12 @@ public class DB2JdbcHelper {
      * Initialize JDBC connection properties from configuration
      */
     private void initializeConnectionProperties() {
-        // Build JDBC URL if not provided directly
+        // Build JDBC URL — prefer explicit jdbcUrl, then fall back to url (populated by
+        // the UI form), then construct from individual host/port/dbName fields.
         if (config.getJdbcUrl() != null && !config.getJdbcUrl().isEmpty()) {
             this.jdbcUrl = config.getJdbcUrl();
+        } else if (config.getUrl() != null && config.getUrl().startsWith("jdbc:")) {
+            this.jdbcUrl = config.getUrl();
         } else {
             // Construct JDBC URL from components
             String host = config.getDbHost() != null ? config.getDbHost() : "localhost";
@@ -46,6 +49,26 @@ public class DB2JdbcHelper {
             if (config.isUseSSL()) {
                 this.jdbcUrl += ":sslConnection=true;";
             }
+        }
+
+        // If skipCertValidation is enabled, strip any existing sslCertLocation/
+        // sslTrustStoreLocation from the URL and append the IBM JDBC driver property
+        // that disables certificate hostname/chain validation.
+        if (config.isSkipCertValidation()) {
+            // Remove any existing sslCertLocation or sslTrustStoreLocation the user may
+            // have typed, then append sslTrustStoreLocation= (empty) which causes the
+            // IBM JDBC driver to skip certificate validation entirely.
+            this.jdbcUrl = this.jdbcUrl
+                    .replaceAll("sslCertLocation=[^;]*;?", "")
+                    .replaceAll("sslTrustStoreLocation=[^;]*;?", "")
+                    .replaceAll(";$", "");
+            if (!this.jdbcUrl.contains(":sslConnection=true")) {
+                this.jdbcUrl += ":sslConnection=true;";
+            } else if (!this.jdbcUrl.endsWith(";")) {
+                this.jdbcUrl += ";";
+            }
+            this.jdbcUrl += "sslTrustStoreLocation=;";
+            logger.log(Level.WARNING, "SSL certificate validation is disabled");
         }
 
         // Setup connection properties

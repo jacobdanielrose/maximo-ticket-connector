@@ -57,6 +57,10 @@ spec:
         type: string
         description: "View name to query (e.g., INCIDENT_VIEW)"
         default: "INCIDENT_VIEW"
+      skipCertValidation:
+        type: boolean
+        description: "Skip SSL certificate validation (use for self-signed certificates)"
+        default: false
       issueSamplingRate:
         type: integer
       datasource_type:
@@ -200,6 +204,16 @@ spec:
         apiMapping: connection_config.viewName
         formStep: addConnection
         isRequired: true
+      - id: skipCertValidation
+        element: input
+        type: toggle
+        defaultToggled: false
+        label: "Skip SSL Certificate Validation"
+        labelOff: "Validate certificate"
+        labelOn: "Skip validation"
+        helperText: "Enable for self-signed certificates (e.g., development environments)"
+        apiMapping: connection_config.skipCertValidation
+        formStep: addConnection
       - id: orchestration
         element: input
         type: radio

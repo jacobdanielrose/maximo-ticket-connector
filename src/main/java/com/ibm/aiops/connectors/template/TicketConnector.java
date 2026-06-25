@@ -174,11 +174,12 @@ public class TicketConnector extends NotificationConnectorBase {
         if (booleanEqual(connectionCreateCfg.isData_flow(), true)) {
             logger.log(Level.INFO, "Data flow is on");
 
-            // Determine which polling action to use based on configuration
-            // If JDBC URL or DB host is configured, use DB2 polling, otherwise use default HTTP polling
+            // Determine which polling action to use based on configuration.
+            // The UI form posts the JDBC URL into config.url, so also detect jdbc: prefix there.
             boolean useDB2Polling = (connectionCreateCfg.getJdbcUrl() != null
                     && !connectionCreateCfg.getJdbcUrl().isEmpty())
-                    || (connectionCreateCfg.getDbHost() != null && !connectionCreateCfg.getDbHost().isEmpty());
+                    || (connectionCreateCfg.getDbHost() != null && !connectionCreateCfg.getDbHost().isEmpty())
+                    || (connectionCreateCfg.getUrl() != null && connectionCreateCfg.getUrl().startsWith("jdbc:"));
 
             if (useDB2Polling) {
                 logger.log(Level.INFO, "Using DB2 JDBC polling for Maximo");

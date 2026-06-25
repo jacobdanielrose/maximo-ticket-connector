@@ -257,38 +257,30 @@ fi
 
 # Summary
 if [ ! -z "$FOUND_USERNAME" ] && [ ! -z "$FOUND_PASSWORD" ]; then
+    JDBC_URL="jdbc:db2://${HOSTNAME}:${PORT:-50001}/${FOUND_DATABASE:-BLUDB}:sslConnection=true;"
+
     echo "=================================================="
     log_success "Credentials extracted successfully!"
     echo "=================================================="
     echo ""
-    echo "Configuration for connector .env file:"
-    echo "======================================="
-    cat <<EOF
-export DB_HOST=${HOSTNAME:-db2-service.${NAMESPACE}.svc.cluster.local}
-export DB_PORT=${PORT:-50000}
-export DB_NAME=${FOUND_DATABASE:-MAXDB76}
-export DB_USERNAME=$FOUND_USERNAME
-export DB_PASSWORD='$FOUND_PASSWORD'
-export DB_SCHEMA=MAXIMO
-export VIEW_NAME=INCIDENT_VIEW
-EOF
-    echo ""
-    echo "JDBC URL for AIOps Integration:"
-    echo "================================"
-    echo "jdbc:db2://${HOSTNAME}:${PORT}/${FOUND_DATABASE:-MAXDB76}:sslConnection=true;"
-    echo ""
+
     if [ -z "$EXTERNAL_HOSTNAME" ]; then
-        echo "⚠️  WARNING: Using internal service URL"
-        echo "   This will only work if AIOps is in the same cluster"
+        echo -e "${YELLOW}⚠️  WARNING: No external route found — URL below only works same-cluster${NC}"
+        echo "   Run this to expose DB2 externally, then re-run this script:"
+        echo "   oc create route passthrough db2-external --service=$DB2_SERVICE --port=${PORT:-50001}"
         echo ""
-        echo "To expose DB2 externally for cross-cluster access:"
-        echo "  oc create route passthrough db2-external --service=$DB2_SERVICE --port=$PORT"
-        echo "  Then re-run this script to get the external URL"
-    else
-        echo "✅ Using external route - works across clusters"
     fi
+
+    echo "┌─────────────────────────────────────────────────────────────────┐"
+    echo "│              PASTE INTO AIOPS CONNECTOR UI                      │"
+    echo "├─────────────────────────────────────────────────────────────────┤"
+    printf "│  JDBC URL  : %-51s │\n" "$JDBC_URL"
+    printf "│  Username  : %-51s │\n" "$FOUND_USERNAME"
+    printf "│  Password  : %-51s │\n" "$FOUND_PASSWORD"
+    printf "│  Schema    : %-51s │\n" "MAXIMO"
+    printf "│  View Name : %-51s │\n" "INCIDENT_VIEW"
+    echo "└─────────────────────────────────────────────────────────────────┘"
     echo ""
-    echo "Copy the above to your .env file!"
 else
     echo "=================================================="
     log_warning "Could not extract complete credentials"
@@ -307,7 +299,7 @@ echo "=================================================="
 echo "Next Steps:"
 echo "=================================================="
 echo "1. Create the INCIDENT_VIEW in DB2 (see MAXIMO_DB2_VIEW_SETUP.md)"
-echo "2. Update your connector .env file with the credentials above"
+echo "2. Copy the connector values above into the AIOps UI"
 echo "3. Build and deploy the connector"
 echo "=================================================="
 
