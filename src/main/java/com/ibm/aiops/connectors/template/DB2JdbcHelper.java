@@ -72,8 +72,7 @@ public class DB2JdbcHelper {
         boolean autoSkip = this.jdbcUrl.contains("sslConnection=true")
                 && (config.getSslTrustStore() == null || config.getSslTrustStore().isEmpty());
         if (config.isSkipCertValidation() || autoSkip) {
-            this.jdbcUrl = this.jdbcUrl
-                    .replaceAll(";?sslCertLocation=[^;]*", "")
+            this.jdbcUrl = this.jdbcUrl.replaceAll(";?sslCertLocation=[^;]*", "")
                     .replaceAll(";?sslTrustStoreLocation=[^;]*", "");
             connectionProps.setProperty("sslTrustStoreType", "JKS");
             connectionProps.setProperty("sslTrustStoreLocation", "");
