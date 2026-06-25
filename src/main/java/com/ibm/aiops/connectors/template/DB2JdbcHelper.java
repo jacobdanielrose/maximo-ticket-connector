@@ -1,5 +1,8 @@
 package com.ibm.aiops.connectors.template;
 
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -8,6 +11,10 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import com.ibm.aiops.connectors.template.model.Configuration;
 
@@ -65,7 +72,7 @@ public class DB2JdbcHelper {
         connectionProps.setProperty("retrieveMessagesFromServerOnGetMessage", "true");
         connectionProps.setProperty("progressiveStreaming", "2");
 
-        // Skip SSL cert validation via connection properties (not the URL).
+        // Skip SSL cert validation by installing a trust-all SSLContext.
         // Triggered explicitly by the skipCertValidation toggle, or automatically
         // when sslConnection=true is present but no truststore is configured —
         // which is the common case for MAS DB2 with a self-signed certificate.
@@ -74,13 +81,31 @@ public class DB2JdbcHelper {
         if (config.isSkipCertValidation() || autoSkip) {
             this.jdbcUrl = this.jdbcUrl.replaceAll(";?sslCertLocation=[^;]*", "")
                     .replaceAll(";?sslTrustStoreLocation=[^;]*", "");
-            connectionProps.setProperty("sslTrustStoreType", "JKS");
-            connectionProps.setProperty("sslTrustStoreLocation", "");
-            connectionProps.setProperty("sslTrustStorePassword", "");
+            installTrustAllSslContext();
             logger.log(Level.WARNING, "SSL certificate validation is disabled (self-signed cert mode)");
         }
 
         logger.log(Level.INFO, "JDBC URL configured: " + jdbcUrl);
+    }
+
+    /**
+     * Install a trust-all SSLContext so the IBM DB2 JDBC driver accepts any certificate.
+     */
+    private void installTrustAllSslContext() {
+        try {
+            TrustManager[] trustAll = new TrustManager[] {
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+                    public void checkClientTrusted(X509Certificate[] c, String a) {}
+                    public void checkServerTrusted(X509Certificate[] c, String a) {}
+                }
+            };
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, trustAll, new java.security.SecureRandom());
+            SSLContext.setDefault(sc);
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+            logger.log(Level.WARNING, "Failed to install trust-all SSLContext", e);
+        }
     }
 
     /**
