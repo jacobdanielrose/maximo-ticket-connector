@@ -1,2 +1,5 @@
 -Xms128m
 -Xmx400m
+-Dcom.ibm.db2.jcc.sslCertLocation=
+-Djavax.net.ssl.trustAll=true
+-Dcom.ibm.jsse2.overrideDefaultTLS=true

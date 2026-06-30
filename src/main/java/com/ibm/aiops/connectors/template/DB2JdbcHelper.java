@@ -39,9 +39,9 @@ public class DB2JdbcHelper {
             this.jdbcUrl = config.getUrl();
         } else {
             String host = config.getDbHost() != null ? config.getDbHost() : "localhost";
-            String port = config.getDbPort() != null ? config.getDbPort() : "50000";
+            String port = config.getDbPort() != null ? config.getDbPort() : "50001";
             String dbName = config.getDbName() != null ? config.getDbName() : "MAXDB76";
-            this.jdbcUrl = String.format("jdbc:db2://%s:%s/%s", host, port, dbName);
+            this.jdbcUrl = String.format("jdbc:db2://%s:%s/%s:sslConnection=true;", host, port, dbName);
         }
 
         // Setup connection properties

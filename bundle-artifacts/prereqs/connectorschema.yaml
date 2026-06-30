@@ -157,8 +157,8 @@ spec:
         element: input
         type: text
         label: "JDBC URL"
-        helperText: "DB2 JDBC connection URL (e.g., jdbc:db2://host:port/database)"
-        placeholder: "jdbc:db2://hostname:50000/BLUDB"
+        helperText: "DB2 JDBC connection URL (e.g., jdbc:db2://host:443/database:sslConnection=true;)"
+        placeholder: "jdbc:db2://hostname:443/BLUDB:sslConnection=true;"
         apiMapping: connection_config.url
         formStep: addConnection
         isRequired: true

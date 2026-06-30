@@ -233,8 +233,8 @@ else
         HOSTNAME="$EXTERNAL_HOSTNAME"
     else
         log_warning "No external route found - using internal service"
-        log_info "To create external route, run:"
-        echo "  oc create route passthrough db2-external --service=$DB2_SERVICE --port=$PORT"
+        log_info "To create external route (plain TCP, no SSL), run:"
+        echo "  oc create route passthrough db2-external --service=$DB2_SERVICE --port=50000"
         HOSTNAME="$INTERNAL_HOSTNAME"
     fi
     
@@ -250,14 +250,14 @@ else
     
     if [ ! -z "$FOUND_USERNAME" ]; then
         echo "JDBC URL (for cross-cluster access):"
-        echo "jdbc:db2://${HOSTNAME}:${PORT}/${FOUND_DATABASE:-MAXDB76}:sslConnection=true;"
+        echo "jdbc:db2://${HOSTNAME}:443/${FOUND_DATABASE:-MAXDB76}:sslConnection=true;"
         echo ""
     fi
 fi
 
 # Summary
 if [ ! -z "$FOUND_USERNAME" ] && [ ! -z "$FOUND_PASSWORD" ]; then
-    JDBC_URL="jdbc:db2://${HOSTNAME}:${PORT:-50001}/${FOUND_DATABASE:-BLUDB}:sslConnection=true;"
+    JDBC_URL="jdbc:db2://${HOSTNAME}:443/${FOUND_DATABASE:-BLUDB}:sslConnection=true;"
 
     echo "=================================================="
     log_success "Credentials extracted successfully!"
@@ -266,8 +266,8 @@ if [ ! -z "$FOUND_USERNAME" ] && [ ! -z "$FOUND_PASSWORD" ]; then
 
     if [ -z "$EXTERNAL_HOSTNAME" ]; then
         echo -e "${YELLOW}⚠️  WARNING: No external route found — URL below only works same-cluster${NC}"
-        echo "   Run this to expose DB2 externally, then re-run this script:"
-        echo "   oc create route passthrough db2-external --service=$DB2_SERVICE --port=${PORT:-50001}"
+        echo "   Run this to expose DB2 externally (SSL passthrough on 443), then re-run this script:"
+        echo "   oc create route passthrough db2-external --service=$DB2_SERVICE --port=50001"
         echo ""
     fi
 
