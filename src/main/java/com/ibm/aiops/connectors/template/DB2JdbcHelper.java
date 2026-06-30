@@ -72,17 +72,21 @@ public class DB2JdbcHelper {
         connectionProps.setProperty("retrieveMessagesFromServerOnGetMessage", "true");
         connectionProps.setProperty("progressiveStreaming", "2");
 
-        // Skip SSL cert validation by installing a trust-all SSLContext.
-        // Triggered explicitly by the skipCertValidation toggle, or automatically
-        // when sslConnection=true is present but no truststore is configured —
-        // which is the common case for MAS DB2 with a self-signed certificate.
+        // The IBM DB2 JDBC driver uses its own SSL stack driven by javax.net.ssl
+        // system properties — it does not use the JVM default SSLContext.
+        // When sslConnection=true is present but no truststore is configured,
+        // set sslConnection=false so the driver connects over plain TCP.
+        // The passthrough route forwards raw TCP to DB2 port 50001 regardless.
         boolean autoSkip = this.jdbcUrl.contains("sslConnection=true")
                 && (config.getSslTrustStore() == null || config.getSslTrustStore().isEmpty());
         if (config.isSkipCertValidation() || autoSkip) {
-            this.jdbcUrl = this.jdbcUrl.replaceAll(";?sslCertLocation=[^;]*", "")
+            // Replace sslConnection=true with sslConnection=false — connect plain TCP
+            // through the passthrough route which handles the transport layer.
+            this.jdbcUrl = this.jdbcUrl
+                    .replaceAll("sslConnection=true", "sslConnection=false")
+                    .replaceAll(";?sslCertLocation=[^;]*", "")
                     .replaceAll(";?sslTrustStoreLocation=[^;]*", "");
-            installTrustAllSslContext();
-            logger.log(Level.WARNING, "SSL certificate validation is disabled (self-signed cert mode)");
+            logger.log(Level.WARNING, "SSL cert validation skipped — connecting without SSL");
         }
 
         logger.log(Level.INFO, "JDBC URL configured: " + jdbcUrl);
