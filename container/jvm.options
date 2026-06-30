@@ -1,2 +1,4 @@
 -Xms128m
 -Xmx400m
+-Dhttps.protocols=TLSv1.2
+-Djdk.tls.client.protocols=TLSv1.2
