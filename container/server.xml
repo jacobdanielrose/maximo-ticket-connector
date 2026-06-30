@@ -8,6 +8,10 @@
     <feature>mpHealth-4.0</feature>
   </featureManager>
 
+  <!-- Trust all SSL certs for outbound JDBC connections (DB2) -->
+  <ssl id="db2SSLConfig" trustDefaultCerts="true" clientAuthenticationSupported="false" />
+  <outboundConnection host="*" sslRef="db2SSLConfig" />
+
   <httpEndpoint id="defaultHttpEndpoint"
                 host="*"
                 httpsPort="9443"/>
