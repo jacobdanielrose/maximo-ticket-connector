@@ -82,10 +82,8 @@ public class DB2JdbcHelper {
         if (config.isSkipCertValidation() || autoSkip) {
             // Replace sslConnection=true with sslConnection=false — connect plain TCP
             // through the passthrough route which handles the transport layer.
-            this.jdbcUrl = this.jdbcUrl
-                    .replaceAll("sslConnection=true", "sslConnection=false")
-                    .replaceAll(";?sslCertLocation=[^;]*", "")
-                    .replaceAll(";?sslTrustStoreLocation=[^;]*", "");
+            this.jdbcUrl = this.jdbcUrl.replaceAll("sslConnection=true", "sslConnection=false")
+                    .replaceAll(";?sslCertLocation=[^;]*", "").replaceAll(";?sslTrustStoreLocation=[^;]*", "");
             logger.log(Level.WARNING, "SSL cert validation skipped — connecting without SSL");
         }
 
