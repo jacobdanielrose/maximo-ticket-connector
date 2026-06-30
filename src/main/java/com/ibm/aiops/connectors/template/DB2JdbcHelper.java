@@ -1,8 +1,8 @@
 package com.ibm.aiops.connectors.template;
 
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.X509Certificate;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -11,10 +11,6 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import com.ibm.aiops.connectors.template.model.Configuration;
 
@@ -45,16 +41,39 @@ public class DB2JdbcHelper {
         } else if (config.getUrl() != null && config.getUrl().startsWith("jdbc:")) {
             this.jdbcUrl = config.getUrl();
         } else {
-            // Construct JDBC URL from components
             String host = config.getDbHost() != null ? config.getDbHost() : "localhost";
             String port = config.getDbPort() != null ? config.getDbPort() : "50000";
             String dbName = config.getDbName() != null ? config.getDbName() : "MAXDB76";
-
             this.jdbcUrl = String.format("jdbc:db2://%s:%s/%s", host, port, dbName);
-
-            // Add SSL if configured
             if (config.isUseSSL()) {
                 this.jdbcUrl += ":sslConnection=true;";
+            }
+        }
+
+        // If a PEM CA certificate was pasted in, write it to a temp file and point
+        // sslCertLocation at it — the IBM DB2 JDBC driver's supported mechanism for
+        // trusting a self-signed or private CA certificate.
+        String caCert = config.getCaCertificate();
+        if (caCert != null && !caCert.trim().isEmpty()) {
+            try {
+                Path certFile = Files.createTempFile("db2-ca-", ".crt");
+                Files.writeString(certFile, caCert);
+                certFile.toFile().deleteOnExit();
+                // Ensure sslConnection=true is in the URL
+                this.jdbcUrl = this.jdbcUrl.replaceAll(";?sslCertLocation=[^;]*", "");
+                if (!this.jdbcUrl.contains("sslConnection=true")) {
+                    if (!this.jdbcUrl.contains(":")) {
+                        this.jdbcUrl += ":sslConnection=true;";
+                    } else {
+                        this.jdbcUrl = this.jdbcUrl.replaceAll(";?$", ";") + "sslConnection=true;";
+                    }
+                } else if (!this.jdbcUrl.endsWith(";")) {
+                    this.jdbcUrl += ";";
+                }
+                this.jdbcUrl += "sslCertLocation=" + certFile.toAbsolutePath() + ";";
+                logger.log(Level.INFO, "Using pasted CA certificate for DB2 SSL");
+            } catch (IOException e) {
+                logger.log(Level.WARNING, "Failed to write CA certificate to temp file", e);
             }
         }
 
@@ -63,74 +82,25 @@ public class DB2JdbcHelper {
         connectionProps.setProperty("user", config.getUsername());
         connectionProps.setProperty("password", config.getPassword());
 
-        // Set current schema if provided
         if (config.getDbSchema() != null && !config.getDbSchema().isEmpty()) {
             connectionProps.setProperty("currentSchema", config.getDbSchema());
         }
 
-        // Additional DB2 specific properties
         connectionProps.setProperty("retrieveMessagesFromServerOnGetMessage", "true");
         connectionProps.setProperty("progressiveStreaming", "2");
-
-        // The IBM DB2 JDBC driver uses its own SSL stack driven by javax.net.ssl
-        // system properties — it does not use the JVM default SSLContext.
-        // When sslConnection=true is present but no truststore is configured,
-        // set sslConnection=false so the driver connects over plain TCP.
-        // The passthrough route forwards raw TCP to DB2 port 50001 regardless.
-        boolean autoSkip = this.jdbcUrl.contains("sslConnection=true")
-                && (config.getSslTrustStore() == null || config.getSslTrustStore().isEmpty());
-        if (config.isSkipCertValidation() || autoSkip) {
-            // Replace sslConnection=true with sslConnection=false — connect plain TCP
-            // through the passthrough route which handles the transport layer.
-            this.jdbcUrl = this.jdbcUrl.replaceAll("sslConnection=true", "sslConnection=false")
-                    .replaceAll(";?sslCertLocation=[^;]*", "").replaceAll(";?sslTrustStoreLocation=[^;]*", "");
-            logger.log(Level.WARNING, "SSL cert validation skipped — connecting without SSL");
-        }
 
         logger.log(Level.INFO, "JDBC URL configured: " + jdbcUrl);
     }
 
     /**
-     * Install a trust-all SSLContext so the IBM DB2 JDBC driver accepts any certificate.
-     */
-    private void installTrustAllSslContext() {
-        try {
-            TrustManager[] trustAll = new TrustManager[] { new X509TrustManager() {
-                public X509Certificate[] getAcceptedIssuers() {
-                    return new X509Certificate[0];
-                }
-
-                public void checkClientTrusted(X509Certificate[] c, String a) {
-                }
-
-                public void checkServerTrusted(X509Certificate[] c, String a) {
-                }
-            } };
-            SSLContext sc = SSLContext.getInstance("TLS");
-            sc.init(null, trustAll, new java.security.SecureRandom());
-            SSLContext.setDefault(sc);
-        } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            logger.log(Level.WARNING, "Failed to install trust-all SSLContext", e);
-        }
-    }
-
-    /**
      * Get a database connection
-     *
-     * @return Connection object
-     *
-     * @throws SQLException
-     *             if connection fails
      */
     public Connection getConnection() throws SQLException {
         try {
-            // Load DB2 JDBC driver
             Class.forName("com.ibm.db2.jcc.DB2Driver");
-
             Connection conn = DriverManager.getConnection(jdbcUrl, connectionProps);
             logger.log(Level.INFO, "Successfully connected to DB2 database");
             return conn;
-
         } catch (ClassNotFoundException e) {
             logger.log(Level.SEVERE, "DB2 JDBC Driver not found", e);
             throw new SQLException("DB2 JDBC Driver not found: " + e.getMessage());
@@ -142,8 +112,6 @@ public class DB2JdbcHelper {
 
     /**
      * Test the database connection
-     *
-     * @return true if connection is successful, false otherwise
      */
     public boolean testConnection() {
         Connection conn = null;
@@ -158,71 +126,31 @@ public class DB2JdbcHelper {
         }
     }
 
-    /**
-     * Execute a query and return ResultSet
-     *
-     * @param query
-     *            SQL query to execute
-     *
-     * @return ResultSet containing query results
-     *
-     * @throws SQLException
-     *             if query execution fails
-     */
     public ResultSet executeQuery(String query) throws SQLException {
         Connection conn = getConnection();
         PreparedStatement stmt = conn.prepareStatement(query);
         return stmt.executeQuery();
     }
 
-    /**
-     * Execute a parameterized query
-     *
-     * @param query
-     *            SQL query with parameters
-     * @param params
-     *            Parameters to bind to the query
-     *
-     * @return ResultSet containing query results
-     *
-     * @throws SQLException
-     *             if query execution fails
-     */
     public ResultSet executeQuery(String query, Object... params) throws SQLException {
         Connection conn = getConnection();
         PreparedStatement stmt = conn.prepareStatement(query);
-
-        // Bind parameters
         for (int i = 0; i < params.length; i++) {
             stmt.setObject(i + 1, params[i]);
         }
-
         return stmt.executeQuery();
     }
 
-    /**
-     * Close database connection safely
-     *
-     * @param conn
-     *            Connection to close
-     */
     public void closeConnection(Connection conn) {
         if (conn != null) {
             try {
                 conn.close();
-                logger.log(Level.FINE, "Database connection closed");
             } catch (SQLException e) {
                 logger.log(Level.WARNING, "Error closing connection", e);
             }
         }
     }
 
-    /**
-     * Close ResultSet safely
-     *
-     * @param rs
-     *            ResultSet to close
-     */
     public void closeResultSet(ResultSet rs) {
         if (rs != null) {
             try {
@@ -233,12 +161,6 @@ public class DB2JdbcHelper {
         }
     }
 
-    /**
-     * Close PreparedStatement safely
-     *
-     * @param stmt
-     *            PreparedStatement to close
-     */
     public void closeStatement(PreparedStatement stmt) {
         if (stmt != null) {
             try {
@@ -249,27 +171,12 @@ public class DB2JdbcHelper {
         }
     }
 
-    /**
-     * Close all resources safely
-     *
-     * @param conn
-     *            Connection to close
-     * @param stmt
-     *            PreparedStatement to close
-     * @param rs
-     *            ResultSet to close
-     */
     public void closeResources(Connection conn, PreparedStatement stmt, ResultSet rs) {
         closeResultSet(rs);
         closeStatement(stmt);
         closeConnection(conn);
     }
 
-    /**
-     * Get the configured JDBC URL
-     *
-     * @return JDBC URL string
-     */
     public String getJdbcUrl() {
         return jdbcUrl;
     }

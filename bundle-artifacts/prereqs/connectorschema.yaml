@@ -61,6 +61,9 @@ spec:
         type: boolean
         description: "Skip SSL certificate validation (use for self-signed certificates)"
         default: false
+      caCertificate:
+        type: string
+        description: "PEM-encoded CA certificate for DB2 SSL connection"
       issueSamplingRate:
         type: integer
       datasource_type:
@@ -213,6 +216,14 @@ spec:
         labelOn: "Skip validation"
         helperText: "Enable for self-signed certificates (e.g., development environments)"
         apiMapping: connection_config.skipCertValidation
+        formStep: addConnection
+      - id: caCertificate
+        element: input
+        type: textarea
+        label: "CA Certificate (PEM)"
+        helperText: "Paste the PEM-encoded CA certificate for the DB2 SSL connection. Run: oc exec <db2-pod> -n db2u -- cat /secrets/db2ssl/ca.crt"
+        placeholder: "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+        apiMapping: connection_config.caCertificate
         formStep: addConnection
       - id: orchestration
         element: input

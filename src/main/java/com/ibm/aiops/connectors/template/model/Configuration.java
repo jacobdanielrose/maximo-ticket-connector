@@ -49,6 +49,7 @@ public class Configuration {
     protected String driverClass; // JDBC driver class (default: com.ibm.db2.jcc.DB2Driver)
     protected boolean useSSL; // Whether to use SSL for DB connection
     protected boolean skipCertValidation; // Whether to skip SSL certificate validation
+    protected String caCertificate; // PEM content of the DB2 CA certificate (pasted by user)
     protected String sslTrustStore; // SSL truststore path if needed
     protected String sslTrustStorePassword; // SSL truststore password
 }
