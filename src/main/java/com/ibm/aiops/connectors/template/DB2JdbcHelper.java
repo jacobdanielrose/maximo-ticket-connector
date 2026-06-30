@@ -1,8 +1,5 @@
 package com.ibm.aiops.connectors.template;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -45,36 +42,6 @@ public class DB2JdbcHelper {
             String port = config.getDbPort() != null ? config.getDbPort() : "50000";
             String dbName = config.getDbName() != null ? config.getDbName() : "MAXDB76";
             this.jdbcUrl = String.format("jdbc:db2://%s:%s/%s", host, port, dbName);
-            if (config.isUseSSL()) {
-                this.jdbcUrl += ":sslConnection=true;";
-            }
-        }
-
-        // If a PEM CA certificate was pasted in, write it to a temp file and point
-        // sslCertLocation at it — the IBM DB2 JDBC driver's supported mechanism for
-        // trusting a self-signed or private CA certificate.
-        String caCert = config.getCaCertificate();
-        if (caCert != null && !caCert.trim().isEmpty()) {
-            try {
-                Path certFile = Files.createTempFile("db2-ca-", ".crt");
-                Files.writeString(certFile, caCert);
-                certFile.toFile().deleteOnExit();
-                // Ensure sslConnection=true is in the URL
-                this.jdbcUrl = this.jdbcUrl.replaceAll(";?sslCertLocation=[^;]*", "");
-                if (!this.jdbcUrl.contains("sslConnection=true")) {
-                    if (!this.jdbcUrl.contains(":")) {
-                        this.jdbcUrl += ":sslConnection=true;";
-                    } else {
-                        this.jdbcUrl = this.jdbcUrl.replaceAll(";?$", ";") + "sslConnection=true;";
-                    }
-                } else if (!this.jdbcUrl.endsWith(";")) {
-                    this.jdbcUrl += ";";
-                }
-                this.jdbcUrl += "sslCertLocation=" + certFile.toAbsolutePath() + ";";
-                logger.log(Level.INFO, "Using pasted CA certificate for DB2 SSL");
-            } catch (IOException e) {
-                logger.log(Level.WARNING, "Failed to write CA certificate to temp file", e);
-            }
         }
 
         // Setup connection properties

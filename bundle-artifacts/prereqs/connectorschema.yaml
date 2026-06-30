@@ -57,13 +57,6 @@ spec:
         type: string
         description: "View name to query (e.g., INCIDENT_VIEW)"
         default: "INCIDENT_VIEW"
-      skipCertValidation:
-        type: boolean
-        description: "Skip SSL certificate validation (use for self-signed certificates)"
-        default: false
-      caCertificate:
-        type: string
-        description: "PEM-encoded CA certificate for DB2 SSL connection"
       issueSamplingRate:
         type: integer
       datasource_type:
@@ -164,8 +157,8 @@ spec:
         element: input
         type: text
         label: "JDBC URL"
-        helperText: "DB2 JDBC connection URL (e.g., jdbc:db2://host:port/database:sslConnection=true;)"
-        placeholder: "jdbc:db2://hostname:50001/BLUDB:sslConnection=true;"
+        helperText: "DB2 JDBC connection URL (e.g., jdbc:db2://host:port/database)"
+        placeholder: "jdbc:db2://hostname:50000/BLUDB"
         apiMapping: connection_config.url
         formStep: addConnection
         isRequired: true
@@ -207,24 +200,6 @@ spec:
         apiMapping: connection_config.viewName
         formStep: addConnection
         isRequired: true
-      - id: skipCertValidation
-        element: input
-        type: toggle
-        defaultToggled: false
-        label: "Skip SSL Certificate Validation"
-        labelOff: "Validate certificate"
-        labelOn: "Skip validation"
-        helperText: "Enable for self-signed certificates (e.g., development environments)"
-        apiMapping: connection_config.skipCertValidation
-        formStep: addConnection
-      - id: caCertificate
-        element: input
-        type: textarea
-        label: "CA Certificate (PEM)"
-        helperText: "Paste the PEM-encoded CA certificate for the DB2 SSL connection. Run: oc exec <db2-pod> -n db2u -- cat /secrets/db2ssl/ca.crt"
-        placeholder: "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
-        apiMapping: connection_config.caCertificate
-        formStep: addConnection
       - id: orchestration
         element: input
         type: radio
