@@ -192,12 +192,8 @@ public class DB2PollingAction implements Runnable {
         StringBuilder query = new StringBuilder();
         query.append("SELECT ");
         query.append("TICKETID, TICKETUID, CLASS, STATUS, DESCRIPTION, ");
-        query.append("DESCRIPTION_LONGDESCRIPTION, REPORTEDBY, AFFECTEDPERSON, ");
-        query.append("OWNER, OWNERGROUP, SITEID, ORGID, REPORTDATE, ");
-        query.append("STATUSDATE, CHANGEDATE, ACTSTART, ACTFINISH, ");
-        query.append("TARGETSTART, TARGETFINISH, CLASSSTRUCTUREID, ");
-        query.append("ASSETNUM, LOCATION, FAILURECODE, PRIORITY, ");
-        query.append("REPORTEDPRIORITY, EXTERNALSYSTEM, EXTERNALREFID ");
+        query.append("REPORTEDBY, OWNER, OWNERGROUP, SITEID, ORGID, ");
+        query.append("REPORTDATE, STATUSDATE, CHANGEDATE ");
         query.append("FROM ").append(fullViewName).append(" ");
 
         if (connMode.equals(ConnectorConstants.HISTORICAL)) {
@@ -239,14 +235,12 @@ public class DB2PollingAction implements Runnable {
 
         // Descriptions
         json.put(Ticket.key_short_description, getStringOrEmpty(rs, "DESCRIPTION"));
-        String longDesc = getStringOrEmpty(rs, "DESCRIPTION_LONGDESCRIPTION");
-        json.put(Ticket.key_description, longDesc.isEmpty() ? getStringOrEmpty(rs, "DESCRIPTION") : longDesc);
+        json.put(Ticket.key_description, getStringOrEmpty(rs, "DESCRIPTION"));
 
         json.put(Ticket.key_opened_by, getStringOrEmpty(rs, "REPORTEDBY"));
         json.put(Ticket.key_source_name, "Maximo");
         json.put(Ticket.key_sys_updated_by, getStringOrEmpty(rs, "OWNER"));
         json.put(Ticket.key_closed_by, getStringOrEmpty(rs, "OWNER"));
-        json.put(Ticket.key_caller_id, getStringOrEmpty(rs, "AFFECTEDPERSON"));
         json.put(Ticket.key_sys_class_name, getStringOrEmpty(rs, "CLASS"));
 
         // Instance/source
@@ -270,16 +264,10 @@ public class DB2PollingAction implements Runnable {
         }
 
         // Additional fields
-        json.put(Ticket.key_impact, String.valueOf(rs.getInt("PRIORITY")));
-        json.put(Ticket.key_type, getStringOrEmpty(rs, "CLASSSTRUCTUREID"));
-        json.put(Ticket.key_reason, getStringOrEmpty(rs, "FAILURECODE"));
-
-        // Connection metadata
         json.put(Ticket.key_connectionmode, connMode);
         json.put(Ticket.key_connection_id, connector.getConnectorID());
 
         // Build source URL
-        String externalRef = getStringOrEmpty(rs, "EXTERNALREFID");
         String source = config.getUrl() != null ? config.getUrl()
                 + "/ui/?event=loadapp&value=incident&additionalevent=useqbe&additionaleventvalue=ticketid=" + ticketId
                 : "maximo://incident/" + ticketId;
