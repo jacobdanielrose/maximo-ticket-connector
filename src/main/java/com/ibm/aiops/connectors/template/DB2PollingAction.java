@@ -58,7 +58,7 @@ public class DB2PollingAction implements Runnable {
         logger.log(Level.INFO, "Starting DB2 Incident Poll Action");
 
         HashMap<String, String> mapping = new HashMap<String, String>();
-        ticketAction = new TicketAction(connector, mapping, ConnectorConstants.TICKET_TYPE, config.getJdbcUrl(),
+        ticketAction = new TicketAction(connector, mapping, ConnectorConstants.TICKET_TYPE, config.getUrl(),
                 connMode);
 
         actionCounter.increment();
