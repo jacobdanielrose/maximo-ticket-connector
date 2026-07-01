@@ -17,6 +17,17 @@ ENV LICENSE=accept
 
 USER 0
 RUN microdnf install -y procps-ng && microdnf clean all
+
+# Import DB2 CA cert into the JVM truststore (for JDBC SSL) and Liberty's
+# default keystore (for WSX509TrustManager). The cert is the DB2U CA at
+# /secrets/db2ssl/ca.crt on the Maximo cluster.
+COPY container/certs/db2-ca.crt /tmp/db2-ca.crt
+RUN keytool -importcert -trustcacerts -alias db2-ca \
+    -file /tmp/db2-ca.crt \
+    -keystore /opt/java/openjdk/lib/security/cacerts \
+    -storepass changeit -noprompt && \
+    rm /tmp/db2-ca.crt
+
 USER 1001
 
 COPY --chown=1001:0 container/import-certs.sh /opt/import-certs.sh
