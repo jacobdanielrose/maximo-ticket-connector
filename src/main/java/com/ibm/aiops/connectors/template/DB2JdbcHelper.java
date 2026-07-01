@@ -41,7 +41,8 @@ public class DB2JdbcHelper {
             String host = config.getDbHost() != null ? config.getDbHost() : "localhost";
             String port = config.getDbPort() != null ? config.getDbPort() : "50001";
             String dbName = config.getDbName() != null ? config.getDbName() : "MAXDB76";
-            this.jdbcUrl = String.format("jdbc:db2://%s:%s/%s:sslConnection=true;sslPeerName=db2u;", host, port, dbName);
+            this.jdbcUrl = String.format("jdbc:db2://%s:%s/%s:sslConnection=true;sslPeerName=db2u;", host, port,
+                    dbName);
         }
 
         // Setup connection properties
