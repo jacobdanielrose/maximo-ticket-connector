@@ -8,9 +8,10 @@
     <feature>mpHealth-4.0</feature>
   </featureManager>
 
-  <!-- Trust all SSL certs for outbound JDBC connections (DB2) -->
+  <!-- Disable hostname verification for outbound connections (DB2 cert CN=db2u does not match route hostname) -->
   <ssl id="db2SSLConfig" trustDefaultCerts="true" clientAuthenticationSupported="false" />
-  <outboundConnection host="*" sslRef="db2SSLConfig" />
+  <ssl id="defaultSSLConfig" trustDefaultCerts="true" hostNameVerificationEnabled="false" />
+  <outboundConnection host="*" sslRef="defaultSSLConfig" />
 
   <httpEndpoint id="defaultHttpEndpoint"
                 host="*"

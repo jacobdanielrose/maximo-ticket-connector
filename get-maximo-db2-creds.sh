@@ -250,14 +250,14 @@ else
     
     if [ ! -z "$FOUND_USERNAME" ]; then
         echo "JDBC URL (for cross-cluster access):"
-        echo "jdbc:db2://${HOSTNAME}:443/${FOUND_DATABASE:-MAXDB76}:sslConnection=true;"
+        echo "jdbc:db2://${HOSTNAME}:443/${FOUND_DATABASE:-MAXDB76}:sslConnection=true;sslPeerName=db2u;"
         echo ""
     fi
 fi
 
 # Summary
 if [ ! -z "$FOUND_USERNAME" ] && [ ! -z "$FOUND_PASSWORD" ]; then
-    JDBC_URL="jdbc:db2://${HOSTNAME}:443/${FOUND_DATABASE:-BLUDB}:sslConnection=true;"
+    JDBC_URL="jdbc:db2://${HOSTNAME}:443/${FOUND_DATABASE:-BLUDB}:sslConnection=true;sslPeerName=db2u;"
 
     echo "=================================================="
     log_success "Credentials extracted successfully!"
