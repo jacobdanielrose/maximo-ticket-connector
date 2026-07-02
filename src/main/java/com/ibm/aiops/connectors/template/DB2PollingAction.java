@@ -192,7 +192,7 @@ public class DB2PollingAction implements Runnable {
         query.append("SELECT ");
         query.append("TICKETID, TICKETUID, CLASS, STATUS, DESCRIPTION, ");
         query.append("REPORTEDBY, OWNER, OWNERGROUP, SITEID, ORGID, ");
-        query.append("REPORTDATE, STATUSDATE, CHANGEDATE ");
+        query.append("REPORTDATE, STATUSDATE, CHANGEDATE, SOLUTION ");
         query.append("FROM ").append(fullViewName).append(" ");
 
         if (connMode.equals(ConnectorConstants.HISTORICAL)) {
@@ -260,6 +260,12 @@ public class DB2PollingAction implements Runnable {
         Timestamp statusDate = rs.getTimestamp("STATUSDATE");
         if (statusDate != null && isClosedStatus(status)) {
             json.put(Ticket.key_closed_at, sdf.format(statusDate));
+        }
+
+        // Solution / resolution notes
+        String solution = getStringOrEmpty(rs, "SOLUTION");
+        if (!solution.isEmpty()) {
+            json.put(Ticket.key_close_notes, solution);
         }
 
         // Additional fields
