@@ -255,22 +255,12 @@ else
     fi
 fi
 
-# Try to find Maximo web UI URL from MAS route
+# Try to find Maximo web UI URL from MAS manage route
+# The Manage (Maximo) UI route hostname contains "manage" and the path is /maximo
 MAXIMO_UI_URL=""
-MAS_ROUTE=$(oc get route -A 2>/dev/null | grep -i "maximo\|mas-" | grep -v db2 | head -1 | awk '{print $1" "$3}')
-if [ ! -z "$MAS_ROUTE" ]; then
-    MAS_NS=$(echo "$MAS_ROUTE" | awk '{print $1}')
-    MAS_HOST=$(oc get route -n $MAS_NS 2>/dev/null | grep -i "maximo\|mas-" | grep -v db2 | head -1 | awk '{print $2}')
-    if [ ! -z "$MAS_HOST" ]; then
-        MAXIMO_UI_URL="https://${MAS_HOST}/maximo"
-    fi
-fi
-# Fall back to constructing from cluster base domain
-if [ -z "$MAXIMO_UI_URL" ]; then
-    CLUSTER_DOMAIN=$(oc get route -n $NAMESPACE 2>/dev/null | head -2 | tail -1 | awk '{print $2}' | sed 's/^[^.]*\.//')
-    if [ ! -z "$CLUSTER_DOMAIN" ]; then
-        MAXIMO_UI_URL="https://maximo.${CLUSTER_DOMAIN}/maximo"
-    fi
+MAS_MANAGE_HOST=$(oc get route -A 2>/dev/null | grep -i "manage" | grep -v "db2\|grafana\|kibana\|prometheus" | head -1 | awk '{print $3}')
+if [ ! -z "$MAS_MANAGE_HOST" ]; then
+    MAXIMO_UI_URL="https://${MAS_MANAGE_HOST}/maximo"
 fi
 
 # Summary

@@ -41,7 +41,7 @@ public class DB2PollingAction implements Runnable {
     private TicketAction ticketAction;
 
     static final Logger logger = Logger.getLogger(DB2PollingAction.class.getName());
-    static final String dateFormatPattern = "yyyy-MM-dd HH:mm:ss";
+    static final String dateFormatPattern = "yyyy-MM-dd'T'HH:mm:ssZ";
     private SimpleDateFormat sdf = new SimpleDateFormat(dateFormatPattern);
 
     public DB2PollingAction(ConnectorAction action) {
