@@ -255,6 +255,24 @@ else
     fi
 fi
 
+# Try to find Maximo web UI URL from MAS route
+MAXIMO_UI_URL=""
+MAS_ROUTE=$(oc get route -A 2>/dev/null | grep -i "maximo\|mas-" | grep -v db2 | head -1 | awk '{print $1" "$3}')
+if [ ! -z "$MAS_ROUTE" ]; then
+    MAS_NS=$(echo "$MAS_ROUTE" | awk '{print $1}')
+    MAS_HOST=$(oc get route -n $MAS_NS 2>/dev/null | grep -i "maximo\|mas-" | grep -v db2 | head -1 | awk '{print $2}')
+    if [ ! -z "$MAS_HOST" ]; then
+        MAXIMO_UI_URL="https://${MAS_HOST}/maximo"
+    fi
+fi
+# Fall back to constructing from cluster base domain
+if [ -z "$MAXIMO_UI_URL" ]; then
+    CLUSTER_DOMAIN=$(oc get route -n $NAMESPACE 2>/dev/null | head -2 | tail -1 | awk '{print $2}' | sed 's/^[^.]*\.//')
+    if [ ! -z "$CLUSTER_DOMAIN" ]; then
+        MAXIMO_UI_URL="https://maximo.${CLUSTER_DOMAIN}/maximo"
+    fi
+fi
+
 # Summary
 if [ ! -z "$FOUND_USERNAME" ] && [ ! -z "$FOUND_PASSWORD" ]; then
     JDBC_URL="jdbc:db2://${HOSTNAME}:443/${FOUND_DATABASE:-BLUDB}:sslConnection=true;sslPeerName=db2u;"
@@ -279,6 +297,7 @@ if [ ! -z "$FOUND_USERNAME" ] && [ ! -z "$FOUND_PASSWORD" ]; then
     printf "│  Password  : %-51s │\n" "$FOUND_PASSWORD"
     printf "│  Schema    : %-51s │\n" "MAXIMO"
     printf "│  View Name : %-51s │\n" "INCIDENT_VIEW"
+    printf "│  Maximo URL: %-51s │\n" "${MAXIMO_UI_URL:-Not found — check MAS routes manually}"
     echo "└─────────────────────────────────────────────────────────────────┘"
     echo ""
 else
