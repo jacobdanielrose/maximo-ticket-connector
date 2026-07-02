@@ -47,4 +47,5 @@ public class Configuration {
     protected String dbSchema; // Database schema (e.g., MAXIMO)
     protected String viewName; // View name to query (e.g., INCIDENT_VIEW)
     protected String driverClass; // JDBC driver class (default: com.ibm.db2.jcc.DB2Driver)
+    protected String maximoUrl;   // Maximo web UI base URL (e.g., https://maximo.example.com/maximo)
 }

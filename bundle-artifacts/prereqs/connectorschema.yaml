@@ -57,6 +57,9 @@ spec:
         type: string
         description: "View name to query (e.g., INCIDENT_VIEW)"
         default: "INCIDENT_VIEW"
+      maximoUrl:
+        type: string
+        description: "Maximo web UI base URL for ticket deep links (e.g., https://maximo.example.com/maximo)"
       issueSamplingRate:
         type: integer
       datasource_type:
