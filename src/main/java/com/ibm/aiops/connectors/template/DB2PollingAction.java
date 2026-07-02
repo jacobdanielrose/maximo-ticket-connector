@@ -268,8 +268,8 @@ public class DB2PollingAction implements Runnable {
 
         // Build source URL - use maximoUrl if provided, otherwise just reference the ticket ID
         String maximoUrl = config.getMaximoUrl();
-        String source = (maximoUrl != null && !maximoUrl.isEmpty())
-                ? maximoUrl.replaceAll("/$", "") + "/ui/?event=loadapp&value=incident&additionalevent=useqbe&additionaleventvalue=ticketid=" + ticketId
+        String source = (maximoUrl != null && !maximoUrl.isEmpty()) ? maximoUrl.replaceAll("/$", "")
+                + "/ui/?event=loadapp&value=incident&additionalevent=useqbe&additionaleventvalue=ticketid=" + ticketId
                 : "maximo://incident/" + ticketId;
         json.put(Ticket.key_source, source);
 
