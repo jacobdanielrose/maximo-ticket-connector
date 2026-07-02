@@ -203,6 +203,14 @@ spec:
         apiMapping: connection_config.viewName
         formStep: addConnection
         isRequired: true
+      - id: maximoUrl
+        element: input
+        type: text
+        label: "Maximo Web UI URL"
+        placeholder: "https://maximo.example.com/maximo"
+        helperText: "Base URL of your Maximo web UI — used to generate deep links back to tickets"
+        apiMapping: connection_config.maximoUrl
+        formStep: addConnection
       - id: orchestration
         element: input
         type: radio
